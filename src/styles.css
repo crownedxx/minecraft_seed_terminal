@@ -322,3 +322,26 @@
   .sf-toggle { display: block; }
 }
 .sf-sidebar.hidden { display: none; }
+
+.sf-collapse-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--sf-line);
+  color: var(--sf-cyan);
+  font-family: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 0 6px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.sf-collapse-trigger:hover { color: #fff; }
+.sf-chevron { transition: transform 0.2s; display: inline-block; }
+.sf-chevron.open { transform: rotate(180deg); }
+.sf-form[hidden] { display: none; }

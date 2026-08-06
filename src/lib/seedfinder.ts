@@ -87,10 +87,15 @@ export const HELP_TEXT = `Available commands:
   help                       Show this help
   biomes                     List all available biomes
   structures                 List all available structures
+  ores                       List all available ore types
   search <seed> <biome|structure> <name> <x> <z> [radius] [version]
+  ore <seed> <ore> <x> <z> [chunk-radius] [version]
   clear                      Clear the terminal
 
 Examples:
   search 12345 biome mushroom_fields 0 0 1000
   search 12345 structure village 100 200 5000 1.20
+  ore 12345 diamond 0 0
+  ore 12345 ancient_debris 250 -400 8 1.21
 `;
+

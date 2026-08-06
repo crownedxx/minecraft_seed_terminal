@@ -139,6 +139,64 @@ function SeedFinderPage() {
     [append],
   );
 
+  const oreSearch = useCallback(
+    async (args: string[]) => {
+      const [oreSeed, oreName, oreX, oreZ, oreRadius, oreVersion] = args;
+      setBusy(true);
+      try {
+        const cx = Number(oreX);
+        const cz = Number(oreZ);
+        if (!Number.isFinite(cx) || !Number.isFinite(cz))
+          throw new Error("X and Z must be numbers");
+        const chunkRadius = oreRadius ? Number(oreRadius) : 4;
+        if (!Number.isFinite(chunkRadius) || chunkRadius < 0)
+          throw new Error("Chunk radius must be a positive number");
+
+        append(
+          "info",
+          `Simulating ${oreName} veins for seed ${oreSeed} around (${cx}, ${cz}) — ${chunkRadius * 2 + 1}x${chunkRadius * 2 + 1} chunks…`,
+        );
+
+        const veins = await findOres({
+          seed: oreSeed ?? "",
+          ore: oreName ?? "",
+          x: cx,
+          z: cz,
+          chunkRadius,
+          version: oreVersion ?? "1.21",
+        });
+
+        if (veins.length === 0) {
+          append("error", "No veins found in that area. Try a larger chunk radius.");
+          return;
+        }
+
+        const first = veins[0]!;
+        append("header", "CLOSEST VEIN");
+        append("success", `  Position: (${first.x}, ${first.y}, ${first.z})`);
+        append("text", `  Blocks:   ${first.ores}  (${first.size} vein)`);
+        append("text", `  Chunk:    (${first.x >> 4}, ${first.z >> 4})`);
+        append("text", `  Distance: ${first.distance.toFixed(1)} blocks`);
+
+        append("header", `ALL VEINS (${veins.length} found — showing nearest 25)`);
+        for (const v of veins.slice(0, 25)) {
+          append(
+            "text",
+            `  (${String(v.x).padStart(6)}, ${String(v.y).padStart(4)}, ${String(v.z).padStart(6)})  ` +
+              `${String(v.ores).padStart(2)} blocks  ${v.size.padEnd(8)} ${v.distance.toFixed(1)}m`,
+          );
+        }
+        const total = veins.reduce((sum, v) => sum + v.ores, 0);
+        append("success", `${veins.length} veins / ${total} ore blocks in range.`);
+      } catch (e) {
+        append("error", `Error: ${(e as Error).message}`);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [append],
+  );
+
   const processCommand = useCallback(
     (cmd: string) => {
       const parts = cmd.split(/\s+/);
@@ -157,6 +215,19 @@ function SeedFinderPage() {
             void search(args);
           }
           break;
+        case "ore":
+          if (args.length < 4) {
+            append("error", "Usage: ore <seed> <ore> <x> <z> [chunk-radius] [version]");
+            append("info", ORE_HELP);
+          } else {
+            void oreSearch(args);
+          }
+          break;
+        case "ores":
+          append("header", "Available Ores:");
+          append("info", ORE_NAMES.join(", "));
+          append("dim", `Versions: ${ORE_VERSION_NAMES.join(", ")}`);
+          break;
         case "biomes":
           append("header", "Available Biomes:");
           append("info", biomes.join(", "));
@@ -172,8 +243,9 @@ function SeedFinderPage() {
           append("error", `Unknown command: ${head}. Type "help" for commands.`);
       }
     },
-    [append, biomes, search, structures],
+    [append, biomes, oreSearch, search, structures],
   );
+
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {

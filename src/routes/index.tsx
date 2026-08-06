@@ -340,8 +340,23 @@ function SeedFinderPage() {
 
           <aside className={`sf-sidebar${sidebarHidden ? " hidden" : ""}`}>
             <div className="sf-section">
-              <div className="sf-section-title">Quick Search</div>
-              <form className="sf-form" onSubmit={submitForm}>
+              <button
+                type="button"
+                className="sf-collapse-trigger"
+                aria-expanded={formOpen}
+                aria-controls="sf-quick-search"
+                onClick={() => setFormOpen((v) => !v)}
+              >
+                <span>Quick Search</span>
+                <span className={`sf-chevron${formOpen ? " open" : ""}`}>▾</span>
+              </button>
+              <form
+                id="sf-quick-search"
+                className="sf-form"
+                onSubmit={submitForm}
+                hidden={!formOpen}
+              >
+
                 <div className="sf-row">
                   <div className="sf-group">
                     <label htmlFor="sf-seed">Seed</label>

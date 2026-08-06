@@ -1,4 +1,4 @@
-declare module "./seedfinder-wasm.mjs" {
+declare module "*.mjs" {
   const factory: (opts: {
     noInitialRun?: boolean;
     print?: (s: string) => void;

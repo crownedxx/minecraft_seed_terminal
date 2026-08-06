@@ -41,7 +41,7 @@ export function parseListOutput(output: string, section: string): string[] {
   if (startIdx === -1) return [];
   const items: string[] = [];
   for (let i = startIdx + 1; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = (lines[i] ?? "").trim();
     if (!line || line.startsWith("Versions:") || line.startsWith("Examples:")) break;
     line.split(/\s{2,}/).forEach((item) => {
       const trimmed = item.trim();
@@ -72,12 +72,12 @@ export function parseSearchOutput(output: string): { closest: ClosestMatch | nul
     }
     if (!inClosest) continue;
     const pos = line.match(/Position:\s*\((-?\d+),\s*(-?\d+)\)/);
-    if (pos) result.closest = { x: parseInt(pos[1]), z: parseInt(pos[2]) };
+    if (pos) result.closest = { x: Number(pos[1]), z: Number(pos[2]) };
     const dist = line.match(/Distance:\s*([\d.]+)/);
-    if (dist && result.closest) result.closest.distance = parseFloat(dist[1]);
+    if (dist && result.closest) result.closest.distance = Number(dist[1]);
     const chunk = line.match(/Chunk:\s*\((-?\d+),\s*(-?\d+)\)/);
     if (chunk && result.closest)
-      result.closest.chunk = { x: parseInt(chunk[1]), z: parseInt(chunk[2]) };
+      result.closest.chunk = { x: Number(chunk[1]), z: Number(chunk[2]) };
   }
   return result;
 }

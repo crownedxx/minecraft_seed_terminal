@@ -2,11 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
+  ORE_HELP,
+  ORE_NAMES,
+  ORE_VERSION_NAMES,
+  findOres,
+} from "@/lib/orefinder";
+import {
   HELP_TEXT,
   parseListOutput,
   parseSearchOutput,
   runSeedFinder,
 } from "@/lib/seedfinder";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({

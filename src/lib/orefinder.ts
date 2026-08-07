@@ -158,6 +158,8 @@ export type OreSearchParams = {
   seed: string;
   ore: string;
   x: number;
+  /** Optional player Y. When given, distances are true 3D distances. */
+  y?: number;
   z: number;
   chunkRadius: number;
   version: string;

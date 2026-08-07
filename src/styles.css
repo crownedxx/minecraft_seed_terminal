@@ -345,3 +345,25 @@
 .sf-chevron { transition: transform 0.2s; display: inline-block; }
 .sf-chevron.open { transform: rotate(180deg); }
 .sf-form[hidden] { display: none; }
+
+/* Terminal block caret */
+.sf-input-wrap { position: relative; flex: 1; display: block; }
+.sf-input-wrap .sf-input { caret-color: transparent; width: 100%; }
+.sf-caret {
+  position: absolute;
+  top: 0.15em;
+  width: 0.6ch;
+  height: 1.15em;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+.sf-caret.blink { animation: sf-caret-blink 1.06s steps(1, end) infinite; }
+.sf-caret.idle { opacity: 0.35; }
+@keyframes sf-caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* Sidebar toggle always available */
+.sf-toggle { display: block; }

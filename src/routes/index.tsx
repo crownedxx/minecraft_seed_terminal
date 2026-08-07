@@ -61,8 +61,10 @@ function SeedFinderPage() {
   const [biomes, setBiomes] = useState<string[]>([]);
   const [structures, setStructures] = useState<string[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [formOpen, setFormOpen] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(true);
+  const [formOpen, setFormOpen] = useState(true);
+  const [caretPos, setCaretPos] = useState(0);
+  const [focused, setFocused] = useState(true);
 
 
   const [seed, setSeed] = useState("12345");

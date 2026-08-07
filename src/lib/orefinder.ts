@@ -252,10 +252,11 @@ function dist(
 export function buildBranches(
   veins: OreVein[],
   origin: { x: number; y?: number | undefined; z: number },
-  opts: { breakDistance?: number; maxVeins?: number } = {},
+  opts: { breakDistance?: number; maxVeins?: number; maxPerBranch?: number } = {},
 ): OreBranch[] {
   const breakDistance = opts.breakDistance ?? 24;
   const maxVeins = opts.maxVeins ?? 40;
+  const maxPerBranch = opts.maxPerBranch ?? 10;
   const useY = Number.isFinite(origin.y as number);
   const start = { x: origin.x, y: (origin.y as number) ?? 0, z: origin.z };
 
@@ -296,7 +297,7 @@ export function buildBranches(
           bestIdx = i;
         }
       }
-      if (bestIdx < 0 || bestDist > breakDistance) break;
+      if (bestIdx < 0 || bestDist > breakDistance || chain.length >= maxPerBranch) break;
       used[bestIdx] = true;
       remaining--;
       pathLength += bestDist;

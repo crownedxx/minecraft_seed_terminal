@@ -200,6 +200,8 @@ export async function findOres(params: OreSearchParams): Promise<OreVein[]> {
   const raw = w.orefinder_find(finder, zone) ?? [];
   const label = params.ore.toLowerCase();
 
+  const hasY = Number.isFinite(params.y as number);
+
   return raw
     .map((v) => ({
       ore: label,
@@ -209,16 +211,120 @@ export async function findOres(params: OreSearchParams): Promise<OreVein[]> {
       ores: v.ores,
       size: sizeFromKey(v.key),
       confidence: v.confidence,
-      distance: Math.hypot(v.x - params.x, v.z - params.z),
+      distance: hasY
+        ? Math.hypot(v.x - params.x, v.y - (params.y as number), v.z - params.z)
+        : Math.hypot(v.x - params.x, v.z - params.z),
     }))
     .sort((a, b) => a.distance - b.distance);
 }
 
-export const ORE_HELP = `  ore <seed> <ore> <x> <z> [chunk-radius] [version]
+/* ------------------------------------------------------------------ */
+/* Branch grouping                                                     */
+/* ------------------------------------------------------------------ */
+
+export type OreBranch = {
+  /** Veins in walk order: closest to the player first, then nearest-to-previous. */
+  veins: OreVein[];
+  /** Distance from the player to the first vein of the branch. */
+  startDistance: number;
+  /** Total path length walking the branch in order. */
+  pathLength: number;
+  /** Total ore blocks across the branch. */
+  ores: number;
+};
+
+function dist(
+  a: { x: number; y: number; z: number },
+  b: { x: number; y: number; z: number },
+  useY: boolean,
+) {
+  return useY
+    ? Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)
+    : Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+/**
+ * Groups veins into "branches": chains built by repeatedly hopping to the
+ * nearest unvisited vein. A hop longer than `breakDistance` ends the branch,
+ * so each branch is a tight cluster you can mine in one trip instead of a flat
+ * list that ping-pongs across the world at equal radius.
+ */
+export function buildBranches(
+  veins: OreVein[],
+  origin: { x: number; y?: number; z: number },
+  opts: { breakDistance?: number; maxVeins?: number } = {},
+): OreBranch[] {
+  const breakDistance = opts.breakDistance ?? 48;
+  const maxVeins = opts.maxVeins ?? 40;
+  const useY = Number.isFinite(origin.y as number);
+  const start = { x: origin.x, y: (origin.y as number) ?? 0, z: origin.z };
+
+  const pool = veins.slice(0, maxVeins);
+  const used = new Array(pool.length).fill(false);
+  const branches: OreBranch[] = [];
+  let remaining = pool.length;
+
+  while (remaining > 0) {
+    // Seed the branch with the unvisited vein closest to the player.
+    let seedIdx = -1;
+    let seedDist = Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      if (used[i]) continue;
+      const d = pool[i]!.distance;
+      if (d < seedDist) {
+        seedDist = d;
+        seedIdx = i;
+      }
+    }
+    if (seedIdx < 0) break;
+
+    used[seedIdx] = true;
+    remaining--;
+    const chain: OreVein[] = [pool[seedIdx]!];
+    let pathLength = 0;
+    let tip = pool[seedIdx]!;
+
+    // Walk nearest-neighbour until the next hop is too far.
+    for (;;) {
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < pool.length; i++) {
+        if (used[i]) continue;
+        const d = dist(tip, pool[i]!, useY);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx < 0 || bestDist > breakDistance) break;
+      used[bestIdx] = true;
+      remaining--;
+      pathLength += bestDist;
+      tip = pool[bestIdx]!;
+      chain.push(tip);
+    }
+
+    branches.push({
+      veins: chain,
+      startDistance: dist(start, chain[0]!, useY),
+      pathLength,
+      ores: chain.reduce((s, v) => s + v.ores, 0),
+    });
+  }
+
+  return branches.sort((a, b) => a.startDistance - b.startDistance);
+}
+
+export const ORE_HELP = `  ore <seed> <ore> <x> [y] <z> [chunk-radius] [version]
 
 Ores:    ${ORE_NAMES.join(", ")}
 Versions: ${ORE_VERSION_NAMES.join(", ")}
 
+Give your Y coordinate for true 3D distances (recommended).
+Results are grouped into branches: each branch is a cluster you can mine in
+one trip, ordered closest-to-you first then nearest-to-previous vein.
+
 Examples:
   ore 12345 diamond 0 0
-  ore 12345 ancient_debris 250 -400 8 1.21`;
+  ore 12345 diamond 120 -54 -300
+  ore 12345 ancient_debris 250 12 -400 8 1.21`;

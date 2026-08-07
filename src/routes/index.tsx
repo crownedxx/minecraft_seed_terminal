@@ -5,6 +5,7 @@ import {
   ORE_HELP,
   ORE_NAMES,
   ORE_VERSION_NAMES,
+  buildBranches,
   findOres,
 } from "@/lib/orefinder";
 import {
@@ -143,29 +144,48 @@ function SeedFinderPage() {
 
   const oreSearch = useCallback(
     async (args: string[]) => {
-      const [oreSeed, oreName, oreX, oreZ, oreRadius, oreVersion] = args;
+      const [oreSeed, oreName, ...rest] = args;
       setBusy(true);
       try {
-        const cx = Number(oreX);
-        const cz = Number(oreZ);
-        if (!Number.isFinite(cx) || !Number.isFinite(cz))
-          throw new Error("X and Z must be numbers");
-        const chunkRadius = oreRadius ? Number(oreRadius) : 4;
+        // Positional coords: <x> <z> or <x> <y> <z>, then [chunk-radius] [version].
+        const nums: number[] = [];
+        let i = 0;
+        while (i < rest.length && rest[i] !== undefined && rest[i] !== "" && Number.isFinite(Number(rest[i]))) {
+          nums.push(Number(rest[i]!));
+          i++;
+        }
+        const versionArg = rest[i];
+
+        let cx: number, cz: number, cy: number | undefined, chunkRadius: number;
+        if (nums.length === 2) {
+          [cx, cz] = [nums[0]!, nums[1]!];
+          chunkRadius = 4;
+        } else if (nums.length === 3) {
+          [cx, cy, cz] = [nums[0]!, nums[1]!, nums[2]!];
+          chunkRadius = 4;
+        } else if (nums.length >= 4) {
+          [cx, cy, cz] = [nums[0]!, nums[1]!, nums[2]!];
+          chunkRadius = nums[3]!;
+        } else {
+          throw new Error("Need at least X and Z coordinates");
+        }
         if (!Number.isFinite(chunkRadius) || chunkRadius < 0)
           throw new Error("Chunk radius must be a positive number");
 
+        const where = cy === undefined ? `(${cx}, ${cz})` : `(${cx}, ${cy}, ${cz})`;
         append(
           "info",
-          `Simulating ${oreName} veins for seed ${oreSeed} around (${cx}, ${cz}) — ${chunkRadius * 2 + 1}x${chunkRadius * 2 + 1} chunks…`,
+          `Simulating ${oreName} veins for seed ${oreSeed} around ${where} — ${chunkRadius * 2 + 1}x${chunkRadius * 2 + 1} chunks…`,
         );
 
         const veins = await findOres({
           seed: oreSeed ?? "",
           ore: oreName ?? "",
           x: cx,
+          y: cy,
           z: cz,
           chunkRadius,
-          version: oreVersion ?? "1.21",
+          version: versionArg ?? "1.21",
         });
 
         if (veins.length === 0) {
@@ -178,16 +198,45 @@ function SeedFinderPage() {
         append("success", `  Position: (${first.x}, ${first.y}, ${first.z})`);
         append("text", `  Blocks:   ${first.ores}  (${first.size} vein)`);
         append("text", `  Chunk:    (${first.x >> 4}, ${first.z >> 4})`);
-        append("text", `  Distance: ${first.distance.toFixed(1)} blocks`);
+        append(
+          "text",
+          `  Distance: ${first.distance.toFixed(1)} blocks${cy === undefined ? " (horizontal)" : " (3D)"}` +
+            (cy === undefined ? "" : `  ΔY ${first.y - cy > 0 ? "+" : ""}${first.y - cy}`),
+        );
 
-        append("header", `ALL VEINS (${veins.length} found — showing nearest 25)`);
-        for (const v of veins.slice(0, 25)) {
+        const branches = buildBranches(veins, { x: cx, y: cy, z: cz }, { maxVeins: 40 });
+        append(
+          "header",
+          `MINING BRANCHES (${branches.length} clusters from nearest ${Math.min(veins.length, 40)} veins)`,
+        );
+
+        branches.forEach((branch, bi) => {
+          const head = branch.veins[0]!;
           append(
-            "text",
-            `  (${String(v.x).padStart(6)}, ${String(v.y).padStart(4)}, ${String(v.z).padStart(6)})  ` +
-              `${String(v.ores).padStart(2)} blocks  ${v.size.padEnd(8)} ${v.distance.toFixed(1)}m`,
+            "success",
+            `  Branch ${bi + 1} — ${branch.veins.length} veins, ${branch.ores} blocks, ` +
+              `${branch.startDistance.toFixed(0)}m away, ${branch.pathLength.toFixed(0)}m walk`,
           );
-        }
+          append("dim", `    entry (${head.x}, ${head.y}, ${head.z})`);
+          let prev: (typeof branch.veins)[number] | null = null;
+          for (const v of branch.veins) {
+            const hop =
+              prev === null
+                ? `${v.distance.toFixed(0)}m from you`
+                : `+${Math.hypot(
+                    v.x - prev.x,
+                    cy === undefined ? 0 : v.y - prev.y,
+                    v.z - prev.z,
+                  ).toFixed(0)}m`;
+            append(
+              "text",
+              `    (${String(v.x).padStart(6)}, ${String(v.y).padStart(4)}, ${String(v.z).padStart(6)})  ` +
+                `${String(v.ores).padStart(2)} blocks  ${v.size.padEnd(8)} ${hop}`,
+            );
+            prev = v;
+          }
+        });
+
         const total = veins.reduce((sum, v) => sum + v.ores, 0);
         append("success", `${veins.length} veins / ${total} ore blocks in range.`);
       } catch (e) {

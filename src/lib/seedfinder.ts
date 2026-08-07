@@ -89,7 +89,7 @@ export const HELP_TEXT = `Available commands:
   structures                 List all available structures
   ores                       List all available ore types
   search <seed> <biome|structure> <name> <x> <z> [radius] [version]
-  ore <seed> <ore> <x> <z> [chunk-radius] [version]
+  ore <seed> <ore> <x> [y] <z> [chunk-radius] [version]
   clear                      Clear the terminal
 
 Examples:

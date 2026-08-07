@@ -326,18 +326,35 @@ function SeedFinderPage() {
                 <span className="sf-prefix">⬢</span>
                 <span className="sf-prefix">seed-finder</span>
                 <span className="sf-prefix">$</span>
-                <input
-                  ref={inputRef}
-                  className="sf-input"
-                  value={command}
-                  onChange={(e) => setCommand(e.target.value)}
-                  onKeyDown={onKeyDown}
-                  autoComplete="off"
-                  spellCheck={false}
-                  aria-label="Terminal command input"
-                />
+                <span className="sf-input-wrap">
+                  <input
+                    ref={inputRef}
+                    className="sf-input"
+                    value={command}
+                    onChange={(e) => {
+                      setCommand(e.target.value);
+                      setCaretPos(e.target.selectionStart ?? e.target.value.length);
+                    }}
+                    onKeyDown={onKeyDown}
+                    onKeyUp={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+                    onClick={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+                    onSelect={(e) => setCaretPos(e.currentTarget.selectionStart ?? 0)}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-label="Terminal command input"
+                  />
+                  <span
+                    className={`sf-caret${focused ? " blink" : " idle"}`}
+                    style={{ left: `${caretPos}ch` }}
+                    aria-hidden="true"
+                  />
+                </span>
               </div>
             </div>
+          </div>
+
           </div>
 
           <aside className={`sf-sidebar${sidebarHidden ? " hidden" : ""}`}>

@@ -355,7 +355,7 @@ function SeedFinderPage() {
             </div>
           </div>
 
-          </div>
+
 
           <aside className={`sf-sidebar${sidebarHidden ? " hidden" : ""}`}>
             <div className="sf-section">

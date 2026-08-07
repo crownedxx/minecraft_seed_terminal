@@ -251,7 +251,7 @@ function dist(
  */
 export function buildBranches(
   veins: OreVein[],
-  origin: { x: number; y?: number; z: number },
+  origin: { x: number; y?: number | undefined; z: number },
   opts: { breakDistance?: number; maxVeins?: number } = {},
 ): OreBranch[] {
   const breakDistance = opts.breakDistance ?? 48;

@@ -254,7 +254,7 @@ export function buildBranches(
   origin: { x: number; y?: number | undefined; z: number },
   opts: { breakDistance?: number; maxVeins?: number } = {},
 ): OreBranch[] {
-  const breakDistance = opts.breakDistance ?? 48;
+  const breakDistance = opts.breakDistance ?? 24;
   const maxVeins = opts.maxVeins ?? 40;
   const useY = Number.isFinite(origin.y as number);
   const start = { x: origin.x, y: (origin.y as number) ?? 0, z: origin.z };
